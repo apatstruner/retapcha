@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ReTapcha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Internal CSS -->
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            margin: auto;
+            max-width: 500px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .puzzle-grid div {
+            position: relative;
+        }
+
+        .puzzle-grid img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .puzzle-grid div.selected img {
+            border-color: #4CAF50;
+        }
+
+        .puzzle-grid div.selected::after {
+            content: '\2713'; /* Unicode checkmark */
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 24px;
+            color: #4CAF50;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .puzzle-grid img:focus {
+            outline: none;
+            transform: scale(1.05);
+        }
+
+        .shake {
+            animation: shake 0.5s;
+            animation-iteration-count: 1;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        #start-button, #verify-button, #restart-button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 300px;
+        }
+
+        #timer, #round-counter {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #007BFF;
+        }
+
+        #message {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #f44336; /* Red color for error messages */
+        }
+
+        #leaderboard {
+            margin-top: 30px;
+        }
+
+        #leaderboard ol {
+            padding-left: 0;
+            list-style-type: none;
+        }
+
+        h1 {
+            color: #007BFF;
+            font-size: 36px;
+        }
+
+        .difficulty-selection {
+            margin: 20px 0;
+        }
+
+        .difficulty-selection select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+                padding: 20px;
+                width: 95%;
+            }
+
+            .puzzle-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            #start-button, #verify-button, #restart-button {
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            #timer, #round-counter {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .puzzle-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+
+            #start-button, #verify-button, #restart-button {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            #timer, #round-counter {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div class="container" id="start-screen">
+        <h1>Welcome to ReTapcha</h1>
+        <p>Can you beat the puzzles and get the best time?</p>
+        <div class="difficulty-selection">
+            <label>Select Difficulty:</label>
+            <select id="difficulty-level">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+        <button id="start-button" onclick="startGame()">Start Game</button>
+    </div>
+
+    <!-- Gameplay Screen -->
+    <div class="container" id="game-screen" style="display: none;">
+        <div id="game-info">
+            <div id="round-counter">Round: 1/5</div>
+            <div id="timer">Time Left: 30s</div>
+            <div id="message"></div> <!-- Added message div -->
+        </div>
+        <div class="puzzle-grid" id="puzzle-grid">
+            <!-- Images will be loaded here -->
+        </div>
+        <button id="verify-button" onclick="verifySelection()">Verify</button>
+    </div>
+
+    <!-- End Screen -->
+    <div class="container" id="end-screen" style="display: none;">
+        <h1>Game Over!</h1>
+        <p>Your total time: <span id="final-time"></span></p>
+        <input type="text" id="player-name" placeholder="Enter your name" />
+        <button onclick="saveScore()">Save Score</button>
+        <div id="leaderboard">
+            <h2>Leaderboard</h2>
+            <ol id="leaderboard-list"></ol>
+        </div>
+        <button id="restart-button" onclick="restartGame()">Restart</button>
+    </div>
+
+    <!-- Sound Effects -->
+    <!-- Ensure you have these audio files in a 'sounds' directory -->
+    <audio id="select-sound" src="sounds/select.mp3"></audio>
+    <audio id="correct-sound" src="sounds/correct.mp3"></audio>
+    <audio id="wrong-sound" src="sounds/wrong.mp3"></audio>
+    <audio id="gameover-sound" src="sounds/gameover.mp3"></audio>
+
+    <!-- Internal JavaScript -->
+    <script>
+        let selectedImages = [];
+        let startTime, timerInterval, roundTimerInterval;
+        let totalElapsedTime = 0;
+        let currentRound = 1;
+        let totalRounds = 5;
+        let roundTimeLimit = 30; // seconds
+        let leaderboard = [];
+        let difficulty = 'medium';
+
+        const selectSound = document.getElementById('select-sound');
+        const correctSound = document.getElementById('correct-sound');
+        const wrongSound = document.getElementById('wrong-sound');
+        const gameoverSound = document.getElementById('gameover-sound');
+
+        const leaderboardKey = 'retapcha_leaderboard';
+
+        if (localStorage.getItem(leaderboardKey)) {
+            leaderboard = JSON.parse(localStorage.getItem(leaderboardKey));
+        }
+
+        function startGame() {
+            difficulty = document.getElementById('difficulty-level').value;
+            setDifficultySettings(difficulty);
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            resetGame();
+            loadImages();
+            startTime = new Date();
+            timerInterval = setInterval(updateTotalTimer, 100);
+            startRoundTimer();
+        }
+
+        function setDifficultySettings(level) {
+            switch (level) {
+                case 'easy':
+                    totalRounds = 3;
+                    roundTimeLimit = 45;
+                    break;
+                case 'medium':
+                    totalRounds = 5;
+                    roundTimeLimit = 30;
+                    break;
+                case 'hard':
+                    totalRounds = 7;
+                    roundTimeLimit = 20;
+                    break;
+            }
+            document.getElementById('round-counter').textContent = 'Round: 1/' + totalRounds;
+        }
+
+        function toggleSelection(event) {
+            const image = event.target;
+            const index = image.dataset.index;
+            image.parentNode.classList.toggle('selected');
+            if (selectedImages.includes(index)) {
+                selectedImages = selectedImages.filter(i => i !== index);
+            } else {
+                selectedImages.push(index);
+            }
+            // Play selection sound
+            selectSound.play();
+        }
+
+        function verifySelection() {
+            const correctAnswers = Array.from(document.querySelectorAll('.puzzle-grid img'))
+                .filter(img => img.dataset.isBeer === 'true')
+                .map(img => img.dataset.index);
+
+            const selectedCorrectly = selectedImages.every(i => correctAnswers.includes(i)) && correctAnswers.every(i => selectedImages.includes(i));
+
+            if (selectedCorrectly) {
+                correctSound.play();
+                currentRound++;
+                if (currentRound > totalRounds) {
+                    endGame();
+                } else {
+                    document.getElementById('round-counter').textContent = 'Round: ' + currentRound + '/' + totalRounds;
+                    resetRoundTimer();
+                    loadImages();
+                }
+            } else {
+                wrongSound.play();
+                document.getElementById('message').textContent = 'Incorrect selection! Try again.';
+                // Add shake effect to selected images
+                selectedImages.forEach(index => {
+                    const img = document.querySelector(`img[data-index='${index}']`);
+                    img.classList.add('shake');
+                    // Remove the shake class after the animation completes
+                    setTimeout(() => {
+                        img.classList.remove('shake');
+                    }, 500);
+                });
+                // Clear the message after a few seconds
+                setTimeout(() => {
+                    document.getElementById('message').textContent = '';
+                }, 3000);
+                // Clear selected images
+                selectedImages = [];
+                // Remove selected class from images
+                document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                // Allow user to try again without restarting the round
+            }
+        }
+
+        function loadImages() {
+            fetch('images.json')
+                .then(response => response.json())
+                .then(data => {
+                    // Get arrays of images from JSON
+                    const beerImages = data.beerImages;
+                    const objectImages = data.objectImages;
+
+                    // Shuffle images
+                    shuffleArray(beerImages);
+                    shuffleArray(objectImages);
+
+                    // Ensure at least one beer image is included
+                    const numBeerImages = getRandomInt(1, 3);
+                    const selectedBeerImages = beerImages.slice(0, numBeerImages);
+                    const selectedObjectImages = objectImages.slice(0, 9 - numBeerImages);
+
+                    let selectedImagesData = selectedBeerImages.concat(selectedObjectImages);
+
+                    // Shuffle the selected images
+                    shuffleArray(selectedImagesData);
+
+                    // Prepare the image data
+                    const imageData = selectedImagesData.map((imagePath) => {
+                        const isBeer = imagePath.includes('beer');
+                        return {
+                            path: imagePath,
+                            isBeer: isBeer
+                        };
+                    });
+
+                    // Now use imageData to display images as before
+                    const puzzleGrid = document.getElementById('puzzle-grid');
+                    puzzleGrid.innerHTML = '';
+                    selectedImages = [];
+
+                    imageData.forEach((imageObj, index) => {
+                        const imgContainer = document.createElement('div');
+                        const img = document.createElement('img');
+                        img.src = imageObj.path;
+                        img.alt = 'Puzzle Image';
+                        img.dataset.index = index.toString();
+                        img.dataset.isBeer = imageObj.isBeer.toString();
+                        img.setAttribute('tabindex', '0');
+                        img.setAttribute('role', 'button');
+                        img.setAttribute('aria-pressed', 'false');
+                        img.onclick = toggleSelection;
+                        img.onkeydown = (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                toggleSelection(e);
+                            }
+                        };
+                        imgContainer.appendChild(img);
+                        puzzleGrid.appendChild(imgContainer);
+                    });
+                    document.getElementById('verify-button').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching images:', error);
+                    alert('There was an error loading the images. Please try again.');
+                });
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(roundTimerInterval);
+            totalElapsedTime = ((new Date() - startTime) / 1000).toFixed(2);
+            gameoverSound.play();
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
+            document.getElementById('final-time').textContent = totalElapsedTime + 's';
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = `${player.name} - ${player.time}s (${player.difficulty})`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        function saveScore() {
+            const playerName = document.getElementById('player-name').value || 'Anonymous';
+            leaderboard.push({ name: playerName, time: totalElapsedTime, difficulty: difficulty });
+            leaderboard.sort((a, b) => a.time - b.time);
+            localStorage.setItem(leaderboardKey, JSON.stringify(leaderboard));
+            updateLeaderboard();
+        }
+
+        function restartGame() {
+            currentRound = 1;
+            totalElapsedTime = 0;
+            document.getElementById('round-counter').textContent = 'Round: 1/' + totalRounds;
+            document.getElementById('end-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'block';
+        }
+
+        function updateTotalTimer() {
+            const elapsedTime = ((new Date() - startTime) / 1000).toFixed(2);
+            // Update total time somewhere if needed
+        }
+
+        function startRoundTimer() {
+            let timeLeft = roundTimeLimit;
+            document.getElementById('timer').textContent = 'Time Left: ' + timeLeft + 's';
+            roundTimerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = 'Time Left: ' + timeLeft + 's';
+                if (timeLeft <= 0) {
+                    clearInterval(roundTimerInterval);
+                    alert('Time is up! Restarting round.');
+                    restartRound();
+                }
+            }, 1000);
+        }
+
+        function resetRoundTimer() {
+            clearInterval(roundTimerInterval);
+            startRoundTimer();
+        }
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            clearInterval(roundTimerInterval);
+            selectedImages = [];
+            document.getElementById('timer').textContent = 'Time Left: ' + roundTimeLimit + 's';
+            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+        }
+
+        function restartRound() {
+            selectedImages = [];
+            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            resetRoundTimer();
+            loadImages();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Initial leaderboard update
+        updateLeaderboard();
+    </script>
+</body>
+</html>
