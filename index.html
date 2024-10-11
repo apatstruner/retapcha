@@ -194,8 +194,8 @@
 <body>
     <!-- Start Screen -->
     <div class="container" id="start-screen">
-        <h1>Welcome to ReTapcha</h1>
-        <p>Can you beat the puzzles and get the best time?</p>
+        <h1>Welkom bij ReTapcha</h1>
+        <p>Bewijs dat je niet nuchter bent!</p>
         <div class="difficulty-selection">
             <label>Select Difficulty:</label>
             <select id="difficulty-level">
@@ -210,6 +210,7 @@
     <!-- Gameplay Screen -->
     <div class="container" id="game-screen" style="display: none;">
         <div id="game-info">
+            <div id="info">kies alle afbeeldingen van bier</div>
             <div id="round-counter">Round: 1/5</div>
             <div id="timer">Time Left: 30s</div>
             <div id="message"></div> <!-- Added message div -->
@@ -440,7 +441,7 @@
         function restartGame() {
             currentRound = 1;
             totalElapsedTime = 0;
-            document.getElementById('round-counter').textContent = 'Round: 1/' + totalRounds;
+            document.getElementById('round-counter').textContent = 'ronde: 1/' + totalRounds;
             document.getElementById('end-screen').style.display = 'none';
             document.getElementById('start-screen').style.display = 'block';
         }
@@ -452,10 +453,10 @@
 
         function startRoundTimer() {
             let timeLeft = roundTimeLimit;
-            document.getElementById('timer').textContent = 'Time Left: ' + timeLeft + 's';
+            document.getElementById('timer').textContent = 'Tijd over: ' + timeLeft + 's';
             roundTimerInterval = setInterval(() => {
                 timeLeft--;
-                document.getElementById('timer').textContent = 'Time Left: ' + timeLeft + 's';
+                document.getElementById('timer').textContent = 'Tijd over: ' + timeLeft + 's';
                 if (timeLeft <= 0) {
                     clearInterval(roundTimerInterval);
                     alert('Time is up! Restarting round.');
